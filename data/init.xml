@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<global>
+
+<encryptions>
+	<encryption name="encryptXOR" path="encryptXOR.js">
+		<metaSpeed > 9 </metaSpeed>
+		<metaSecure > 3 </metaSecure>
+	</encryption>
+	<encryption name="encryptAES" path="encryptAES.js">
+		<metaSpeed > 6 </metaSpeed>
+		<metaSecure > 7 </metaSecure>
+	</encryption>
+</encryptions>
+
+<modules type="core">
+	<module name="VK" type="1" path="vk.js">
+		<domain>vk.com</domain>
+		<im>.*vk.com\/im?.*sel=.{1,}</im>
+		<comments/>
+	</module>
+	<module name="facebook" type="2" path="fcb.js">
+		<domain>facebook.com</domain>
+		<im>.*facebook.com\/messages\/.{1,}</im>
+		<comments/>
+	</module>
+</modules>
+<modules type="interface">
+</modules>
+</global>
