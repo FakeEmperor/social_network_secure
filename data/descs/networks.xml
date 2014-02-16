@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<networks>
+	<network id="vk" name="Vkontakte Social Network" type="1">
+        <style>auto</style>
+        <script>scripts/vk.js</script>
+		<domain>vk.com</domain>
+		<im>.*vk.com\/im?.*sel=.{1,}</im>
+		<comments/>
+	</network>
+	<network id="fb" name="Facebook Social Network" type="2">
+        <style>auto</style>
+        <script>scripts/fb.js</script>
+		<domain>facebook.com</domain>
+		<im>.*facebook.com\/messages\/.{1,}</im>
+		<comments/>
+	</network>
+</networks>

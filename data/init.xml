@@ -1,30 +1,63 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
-<global>
+<global version="0.3" stability="a">
 
-<encryptions>
-	<encryption name="encryptXOR" path="encryptXOR.js">
-		<metaSpeed > 9 </metaSpeed>
-		<metaSecure > 3 </metaSecure>
-	</encryption>
-	<encryption name="encryptAES" path="encryptAES.js">
-		<metaSpeed > 6 </metaSpeed>
-		<metaSecure > 7 </metaSecure>
-	</encryption>
-</encryptions>
 
-<modules type="core">
-	<module name="VK" type="1" path="vk.js">
-		<domain>vk.com</domain>
-		<im>.*vk.com\/im?.*sel=.{1,}</im>
-		<comments/>
+
+<modules>
+	<module id="core" name="SocialCrypto Plug-in Core module" version="0.1a">
+		<path>core.js</path>
+        	<order>0</order>
+        	<ports>
+            		<port type="both">all</port>
+        	</ports>
 	</module>
-	<module name="facebook" type="2" path="fcb.js">
-		<domain>facebook.com</domain>
-		<im>.*facebook.com\/messages\/.{1,}</im>
-		<comments/>
-	</module>
+    <module id="gui" name="SocialCrypto Plug-in Graphical User Interface module" version="0.1">
+        <order>1</order>
+        <data>descs/gui.xml</data>
+        <ports>
+            <port type="both">core</port>
+            <port type="in">net</port>
+        </ports>
+    </module>
+    <module id="auth" name="SocialCrypto Plug-in Authentication module" version="0.1a">
+        <order>2</order>
+        <ports>
+            <port type="both">core</port>
+        </ports>
+    </module>
+    <module id="net" name="SocialCrypto Plug-in Social Network Interface module" version="0.1">
+        <data>descs/networks.xml</data>
+        <order>3</order>
+        <ports>
+            <port type="both">core</port>
+            <port type="in">p2p</port>
+        </ports>
+    </module>
+    <module id="msg" name="SocialCrypto Plug-in Messaging module" version="0.2a">
+        <order>4</order>
+        <ports>
+            <port type="both">core</port>
+            <port type="both">p2p</port>
+        </ports>
+    </module>
+    <module id="sec" name="SocialCrypto Plug-in Security module" version="0.2a">
+        <order>5</order>
+        <data>descs/encryptions.xml</data>
+        <ports>
+            <port type="both">core</port>
+            <port type="both">msg</port>
+        </ports>
+    </module>
+    <module id="p2p" name="SocialCrypto Plug-in Peer-to-peer Communcation module" version="0.01a">
+        <order>6</order>
+        <ports>
+            <port type="in">core</port>
+            <port type="both">msg</port>
+            <port type="out">net</port>
+        </ports>
+    </module>
 </modules>
-<modules type="interface">
-</modules>
+
+
 </global>

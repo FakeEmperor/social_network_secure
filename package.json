@@ -1,9 +1,9 @@
 {
-  "name": "vk_encrypt",
-  "fullName": "VK Encrypter",
+  "name": "soc_prot",
+  "fullName": "Social Crypto Project",
   "id": "jid1-JYX0CRB3Kwohqg",
-  "description": "Add-on, that will protect your messages in VK - well-known and popular social network in Russia",
+  "description": "A Firefox extension comes to protect your personal data in most popular and well-known Online Social Media Networks. You can freely chat with others knowing that only them can read messages, show some of your personal data only to your trusted friends and be sure, that you are secure in the Net!",
   "author": "CaptainLiner",
   "license": "GNU GPL",
-  "version": "0.7a"
+  "version": "0.3a"
 }

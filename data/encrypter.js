@@ -1,5 +1,5 @@
-//ENCRYPTER
-//<<USING JQUERY>>
+/** ENCRYPTER **/
+/** <<USING JQUERY>> **/
 
 //INJECTS its code to vk.com/im?...sel=...
 //Get the conversation_object
@@ -10,17 +10,18 @@
 // {EXPERIMENTAL}
 // convAdd - adds the conversation to background processing (adds only a listener for new messages)
 // convRemove - removes the conversation from background processing (accepts convObject)
-
-//Events Emitted:
-// convIMSent - when IM message is sent by user (returns convObject with encrypted message)
-// convIMRecv - when IM message is received by user (return convObject with encrypted message)
-// convDecryptFail - received IM cannot be decrypted with the defined key (returns convObject)
-// convEncryptFail - IM to be sent cannot be encrypted with the defined key (returns convObject)
-// convXORFail - XOR function is failed to successfully xor string with the defined key (security warning) (returns num of failed chars to xor)
-// convServiceMsg - when IM that was received by user is also a service message (returns convObject with decrypted service message)
-// convSuccess - when module is prepared to work with convObject, that was received in convStart or convChange event
-// convFail - when module is met an unexpected error (returns convObject with error property)
-// convDestroy - when module is destroyed successfully
+/**
+ * Events Emitted:
+ * convIMSent - when IM message is sent by user (returns convObject with encrypted message)
+ * convIMRecv - when IM message is received by user (return convObject with encrypted message)
+ * convDecryptFail - received IM cannot be decrypted with the defined key (returns convObject)
+ * convEncryptFail - IM to be sent cannot be encrypted with the defined key (returns convObject)
+ * convXORFail - XOR function is failed to successfully xor string with the defined key (security warning) (returns num of failed chars to xor)
+ * convServiceMsg - when IM that was received by user is also a service message (returns convObject with decrypted service message)
+ * convSuccess - when module is prepared to work with convObject, that was received in convStart or convChange event
+ * convFail - when module is met an unexpected error (returns convObject with error property)
+ * convDestroy - when module is destroyed successfully
+**/
 function SetMD5($){
 
     var rotateLeft = function(lValue, iShiftBits) {
@@ -374,7 +375,7 @@ function PrepareModule(convObject){
     // итак - получаем индекс параметров в Emoji (с хера ли, ты бы мог подумать, но я сам не знаю)
     emojiGlobalArr=unsafeWindow.cur.emojiId; // тот самый массив
     current_peer=unsafeWindow.cur.peer; // текущий пир. А вот хуй. Это не пир, а индекс диалога.
-    emojiGlobal=unsafeWindow.Emoji; // класс
+    emojiGlobal=unsafeWindow.Emoji; // класс Emoji
     var emoji_opt_index=emojiGlobalArr[current_peer]; //индекс
     // затем получаем уже у Emoji класса этого опции
     options=emojiGlobal.opts[emoji_opt_index]; //получаем безлимитный пакет опций текущего чувака

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<encryptions>
+	<encryption id="encryptXOR" name="Exclusive-OR byte-to-byte encryption algorithm" path="encryptXOR.js">
+		<metaSpeed > 9 </metaSpeed>
+		<metaSecure > 2 </metaSecure>
+	</encryption>
+	<encryption id="encryptAES" name="Advanced Encryption Standard (Rijndael)" path="encryptAES.js">
+		<metaSpeed > 5 </metaSpeed>
+		<metaSecure > 7 </metaSecure>
+	</encryption>
+	<encryption id="encryptRSA" name="RSA cryptosystem">
+		<metaSpeed > 2 </metaSpeed>
+		<metaSecure > 9 </metaSecure>
+	</encryption>
+</encryptions>

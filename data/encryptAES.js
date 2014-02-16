@@ -7,7 +7,7 @@
  *  4th part - interface
  * As part of Private Social Networks Project (PriSN Project)
  * @author FlyingHam (also known as BrownCap) (c), 2014
-**/
+ **/
 
 /************  NEEDED CONSTANTS & VARIABLES   *************/
 var _state; //current status block
@@ -72,6 +72,42 @@ const Rcon = [
 
 var complexity = 1; // 1 - 128-bit length key, 2 - 192-bit length key, 3 - 256-bit length key
 const Nb = 4;
+
+/************  BASE ALGORITHMS   *************/
+/*
+    Error codes:
+        0x00 - Unknown error
+        0x01 - Encryption error: <type here>
+        0x02 - Decryption error: <type here>
+ */
+function error(code,msg){
+    self.port.emit("cryptError",{code:code,msg:msg});
+}
+//need to move it to encrypter.js file
+const BYTES_PER_CHAR = 2;
+function StringToASCIIArray(str){
+    var arr = [];
+    var c,j,len = BYTES_PER_CHAR*str.length;
+    for(var i = 0; i<len; i+=BYTES_PER_CHAR){
+        c = str.charCodeAt( (i/BYTES_PER_CHAR)<<0 );
+        for(j=0;j<BYTES_PER_CHAR; j++)
+            arr[i+j] = (c>>j*8)&0xFF;
+    }
+    return arr;
+}
+function ASCIIArrayToString(arr){
+    var str = "";
+    var c, j;
+    if(BYTES_PER_CHAR!=1&&arr.length%BYTES_PER_CHAR!=0) return "";
+    for(var i = 0; i<arr.length; i+=BYTES_PER_CHAR){
+        c=0;
+        for(j=0; j<BYTES_PER_CHAR; j++){
+            c|=(arr[i+j]<<j*8);
+        }
+        str+=String.fromCharCode( c );
+    }
+    return str;
+}
 
 function RotWord(arr,shift){
     //console.log("Rot() started with arr="+arr.join(''));
@@ -138,7 +174,7 @@ function KeyExpansion(key){
         // console.log("cycle ended: temp="+temp.join('')+" round_keys="+round_keys.join(''));
     }
 
-    console.log("Round keys: "+_key);
+    //console.log("Round keys: "+_key);
 }
 
 /**
@@ -146,7 +182,7 @@ function KeyExpansion(key){
  *  The round key is added to the state by an XOR function.
  *  @return XORed status matrix with current round key
  *  @arguments round - current round number, state - state block
-**/
+ **/
 function AddRoundKey(round){
     var i,j;
     //console.log("AddRoundKey() function started");
@@ -166,7 +202,7 @@ function AddRoundKey(round){
  * state matrix with values in an S-box.
  * @return Substituted state matrix
  * @arguments state - state matrix
-**/
+ **/
 
 function SubBytes(){
     var i,j;
@@ -185,13 +221,13 @@ function SubBytes(){
  * Offset = Row number. So the first row is not shifted.
  * @return Shifted state matrix
  * @arguments state - state matrix
-**/
+ **/
 function ShiftRows(){
     var i;
     //Starting from 1, because at i=0 there is nothing you can do
     /*for(i=1; i<4; i++){
-        _state[i]=RotWord(_state[i]);
-    }*/
+     _state[i]=RotWord(_state[i]);
+     }*/
     var temp;
 
     // Rotate first row 1 columns to left
@@ -284,12 +320,12 @@ function InvShiftRows(){
 
 function Multiply(x,y) {
     return (
-            ((y & 1) * x) ^ ((y>>1 & 1) *
+        ((y & 1) * x) ^ ((y>>1 & 1) *
             xtime(x)) ^ ((y>>2 & 1) *
             xtime(xtime(x))) ^ ((y>>3 & 1) *
             xtime(xtime(xtime(x)))) ^ ((y>>4 & 1) *
             xtime(xtime(xtime(xtime(x)))))
-           )&0xFF;
+        )&0xFF;
 }
 
 // MixColumns function mixes the columns of the state matrix.
@@ -314,138 +350,287 @@ function InvMixColumns(){
     }
 }
 
-//need to move it to encrypter.js file
-const BYTES_PER_CHAR = 2;
-function StringToASCIIArray(str){
-    var arr = [];
-    var c,j,len = BYTES_PER_CHAR*str.length;
-    for(var i = 0; i<len; i+=BYTES_PER_CHAR){
-        c = str.charCodeAt( (i/BYTES_PER_CHAR)<<0 );
-        for(j=0;j<BYTES_PER_CHAR; j++)
-            arr[i+j] = (c>>j*8)&0xFF;
-    }
-    return arr;
-}
-function ASCIIArrayToString(arr){
-    var str = "";
-    var c, j;
-    if(BYTES_PER_CHAR!=1&&arr.length%BYTES_PER_CHAR!=0) return "";
-    for(var i = 0; i<arr.length; i+=BYTES_PER_CHAR){
-        c=0;
-        for(j=0; j<BYTES_PER_CHAR; j++){
-            c|=(arr[i+j]<<j*8);
-        }
-        str+=String.fromCharCode( c );
-    }
-    return str;
-}
 
-function Encrypt(block,Nr){
-    var i,j,round;
-    _state = [[],[],[],[]];
-    var res;
-    //Copy the input PlainText to state array.
-    for(i=0;i<4;i++)
-    {
-        for(j=0;j<4;j++)
-        {
-            _state[j][i] = block[i*4 + j];
-        }
-    }
-    //console.log("(start) State matrix is: "+_state);
-    // Add the First round key to the state before starting the rounds.
+function EncryptReadyBlock(Nr){
+    var round;
+
+    /** Add the First round key to the state before starting the rounds. **/
     AddRoundKey(0);
-    //console.log("After first step before round: "+_state);
-    // There will be Nr rounds.
-    // The first Nr-1 rounds are identical.
-    // These Nr-1 rounds are executed in the loop below.
+    /** There will be Nr rounds.
+     * The first Nr-1 rounds are identical.
+     * These Nr-1 rounds are executed in the loop below.
+     **/
     for(round=1;round<Nr;round++)
     {
         SubBytes();
-        //console.log("After SubBytes(): "+_state);
         ShiftRows();
-        //console.log("After ShiftRows(): "+_state);
         MixColumns();
-        //console.log("After MixColumns(): "+_state);
         AddRoundKey(round);
-        //console.log("After AddRoundKey(): "+_state);
     }
-    //console.log("After all Nr-1 rounds: "+_state);
-    // The last round is given below.
-    // The MixColumns function is not here in the last round.
+    /**
+     * The last round is given below.
+     * The MixColumns function is not here in the last round.
+     * Because MixColumns in the last round does not increase security level of the cyphertext.
+     **/
     SubBytes();
     ShiftRows();
     AddRoundKey(Nr);
-    //console.log("After the last round: "+_state);
-    // The encryption process is over.
-    // Copy the _state array to output array.
 
-    res = [];
-    for(i=0;i<4;i++)
-    {
-        for(j=0;j<4;j++)
-        {
-            res[i*4+j]=_state[j][i];
-        }
-    }
-    console.log("Final output: "+res);
-    return res;
 }
 
 // InvCipher is the main function that decrypts the CipherText.
-function Decrypt(block,Nr){
-    var i,j,round;
-    _state = [[],[],[],[]];
-    var res;
-    //Copy the input CipherText to _state array.
-    for(i=0;i<4;i++)
-    {
-        for(j=0;j<4;j++)
-        {
-            _state[j][i] = block[i*4 + j];
-        }
-    }
-    //console.log("(start)State matrix is: "+_state);
-    // Add the First round key to the _state before starting the rounds.
+function DecryptReadyBlock(Nr){
+    var round;
+
+    /**
+     * Add the First round key to the _state before starting the rounds.
+     **/
     AddRoundKey(Nr);
-    //console.log("After first step before round: "+_state);
-    // There will be Nr rounds.
-    // The first Nr-1 rounds are identical.
-    // These Nr-1 rounds are executed in the loop below.
+    /**
+     * There will be Nr rounds.
+     * The first Nr-1 rounds are identical.
+     * These Nr-1 rounds are executed in the loop below.
+     **/
+
     for(round=Nr-1;round>0;round--)
     {
         InvShiftRows();
-        //console.log("After InvShiftRows(): "+_state);
         InvSubBytes();
-        //console.log("After InvSubBytes(): "+_state);
         AddRoundKey(round);
-        //console.log("After AddRoundKey(): "+_state);
         InvMixColumns();
-        //console.log("After InvMixColumns(): "+_state);
     }
 
-    // The last round is given below.
-    // The MixColumns function is not here in the last round.
+    /**
+     * The last round is given below.
+     * The MixColumns function is not here in the last round.
+     **/
+
     InvShiftRows();
     InvSubBytes();
     AddRoundKey(0);
-    //console.log("After the last round: "+_state.length);
-    // The decryption process is over.
-    // Copy the state array to output array.
-    res = [];
-    for(i=0;i<4;i++)
-    {
-        for(j=0;j<4;j++)
-        {
-            res[i*4+j]=_state[j][i];
-        }
-    }
-    //console.log("Final output: "+res);
-    return res;
+
 }
 
 
+//AES class
+var AES = {
+    saltBefore:true,
+    saltAfter:true,
+    saltBlocks:1,
+    keyLength:128,
+    //current string data
+    saltB:"",
+    saltA:"",
+    padding:"",
+    iv:"",
+    Nr:0,
+    base:35,
+    charlen:2,
+    genStr:function(l){
+        var i;
+        var str = "";
+        var len = typeof l !== "undefined" ? l : 4*Nb*this.saltBlocks;
+        for(i=0;i<len; i++)
+            str+=String.fromCharCode((Math.random()*255)<<0);
+        return str;
+    },
+    fixedPuts:function(num,len,base){
+        if(typeof base === "undefined") base = this.base;
+       return ("00000000000000000000"+num.toString(base)).slice(-len); //20 chars max
+    },
+    encode:function(arr,base){
+        if(typeof base === "undefined") base = this.base;
+        var i;
+        var res = "";
+        for(i=0; i<arr.length; i++)
+            res+=this.fixedPuts(arr[i],this.charlen,base);
 
+        return res;
+    },
+    decode:function(str,base){
+        if(typeof base === "undefined") base = this.base;
+        var i,len = (str/this.charlen)<<0;
+        var arr = [];
+        for(i=0; i<len; i+=this.charlen)
+            arr[(i/this.charlen)<<0] = parseInt(str.substr(i,this.charlen),base);
+        return arr;
+    },
+
+    toIntArray:function(str){
+        var arr = [];
+        for(var i=0; i<str.length; i++){
+            arr[i] = str.charCodeAt(i);
+        }
+        return arr;
+    },
+    xorStr:function(str1,str2){
+        var res = "";
+        var i,l=Math.min(str1.length,str2.length);
+        for(i=0; i<l; i++){
+            res+=String.fromCharCode(str1.charCodeAt(i)^str2.charCodeAt(i));
+        }
+        return res;
+    },
+    EncryptBlock:function(str){
+        var i,j;
+        _state = [[],[],[],[]];
+        var res;
+        /** Copy the input PlainText to state array. **/
+        for(i=0;i<4;i++)
+        {
+            for(j=0;j<4;j++)
+            {
+                _state[j][i] = str.charCodeAt(i*4 + j);
+            }
+        }
+        /** Encrypt block **/
+        EncryptReadyBlock(this.Nr);
+        /**
+         * The encryption process is over.
+         * Copy the _state array to output array.
+        **/
+        res = "";
+        for(i=0;i<4;i++)
+        {
+            for(j=0;j<4;j++)
+            {
+                res+=String.fromCharCode(_state[j][i]);
+            }
+        }
+        //console.log("Final (encrypt) output: "+res);
+        return res;
+    },
+    DecryptBlock:function(str){
+        var i,j;
+        _state = [[],[],[],[]];
+        var res;
+        //Copy the input CipherText to _state array.
+        for(i=0;i<4;i++)
+        {
+            for(j=0;j<4;j++)
+            {
+                _state[j][i] = str.charCodeAt(i*4 + j);
+            }
+        }
+
+        DecryptReadyBlock(this.Nr);
+        /**
+         * The decryption process is over.
+         * Copy the state array to output array.
+        **/
+        res = "";
+        for(i=0;i<4;i++)
+        {
+            for(j=0;j<4;j++)
+            {
+                res+=String.fromCharCode(_state[j][i]);
+            }
+        }
+        //console.log("Final (decrypt) output: "+res);
+        return res;
+    },
+    /**
+     * see Wikipedia: http://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher-block_chaining_.28CBC.29
+    **/
+
+    CBCEncrypt:function(str,iv){
+        var prevstr,curstr,res = "";
+        var i,bl=(str.length/(Nb*4))<<0;
+        /** first step **/
+        prevstr = iv;
+        for(i=0;i<bl;i++){
+            curstr = str.substr(i*Nb*4,Nb*4);
+            curstr = this.xorStr(curstr,prevstr);
+            prevstr=this.EncryptBlock(curstr);
+            res+=prevstr;
+        }
+
+       return res;
+    },
+    CBCDecrypt:function(str,iv){
+        var prevstr,curstr,res="";
+        var i,bl=(str.length/(Nb*4))<<0;
+        prevstr = iv;
+        for(i=0;i<bl;i++){
+            curstr = str.substr(i*Nb*4,Nb*4);
+            res+=this.xorStr(prevstr,this.DecryptBlock(curstr));
+            prevstr = curstr;
+        }
+
+        return res;
+    },
+    encrypt:function(str,key){
+        var serialized;
+
+        if(this.keyLength%32 != 0) this.keyLength = this.keyLength + (32 - this.keyLength%32);
+        if(this.keyLength<128) this.keyLength = 128;
+        else if(this.keyLength>256) this.keyLength = 256;
+
+        if(this.saltBlocks > 255) this.saltBlocks = this.saltBlocks %256;
+
+        this.saltB=(this.saltBefore)?this.genStr():"";
+        this.saltA=(this.saltAfter)?this.genStr():"";
+        this.padding=this.genStr(4*Nb-str.length%(4*Nb));
+
+        key = this.toIntArray(key);
+        this.iv=this.genStr(4*Nb);
+        //console.log("Encryption algorithm. iv:"+this.iv);
+        serialized = "AES::" + AES.fixedPuts(AES.saltBlocks,2,16) + (1*AES.saltBefore).toString() +
+                    (1*AES.saltAfter).toString() + AES.fixedPuts(this.padding.length,2,16) + "::AES"; //Max chars: 1,048,560.
+        KeyExpansion(key);
+        this.Nr = 6+this.keyLength/32;
+        serialized  = this.EncryptBlock(serialized);
+        serialized += this.EncryptBlock(this.iv);
+        serialized += this.CBCEncrypt(this.saltB+this.padding+str+this.saltA,this.iv);
+
+       return serialized;
+    },
+    decrypt:function(str,key){
+        var header,decrypted;
+        var nSalt,saltB,saltA,nPadding;
+        if(this.keyLength%32 != 0) this.keyLength = this.keyLength + (32 - this.keyLength%32);
+        if(this.keyLength<128) this.keyLength = 128;
+        else if(this.keyLength>256) this.keyLength = 256;
+
+
+        key = this.toIntArray(key);
+        KeyExpansion(key);
+
+        //header
+        header = this.DecryptBlock(str.substr(0,Nb*4));
+        if(header.indexOf("AES::")!=0&&header.lastIndexOf("::AES")!=Nb*4-5){
+            console.log("FAIL!");
+
+            error(0x02,"Header is corrupted");
+            return "";
+        }
+
+        /**
+         * @header:
+         *  1) 0-4   - AES signature.
+         *  2) 5-6   - Number of salt blocks. (hex)
+         *  3) 7     - Are there salt blocks before the message. (0-1)
+         *  4) 8     - Are there salt blocks after the message. (0-1)
+         *  5) 9-10  - Number of padding (!)chars before the message. (hex)
+         *  6) 11-15 - AES signature
+         **/
+        nSalt = parseInt(header.substr(5,2),16);
+        saltB = parseInt(header.charAt(7),10);
+        saltA = parseInt(header.charAt(8),10);
+        nPadding = parseInt(header.substr(9,2),16);
+
+        /** decrypt iv block **/
+        this.iv = this.DecryptBlock(str.substr(Nb*4,Nb*4));
+        /** copy the message and decrypt it **/
+        decrypted = this.CBCDecrypt(str.substr(Nb*4*2),this.iv);
+        return decrypted.substring(Nb*4*(nSalt*saltB)+nPadding,decrypted.length-Nb*4*saltA*nSalt);
+
+    }
+
+};
+
+console.log("FF:"+AES.decrypt(AES.encrypt("AZAZAZA","1234567812345678"),"1234567812345678"));
+//interface with encrypt module
 
 function encryptStart(plaintext,key){
     //break into lines
@@ -457,16 +642,18 @@ function encryptStart(plaintext,key){
     plaintext=StringToASCIIArray(plaintext);
     //break into matrix
     console.log("Starting decryption engine: plaintext before "+plaintext);
-    for(; i*16<=plaintext.length; i++){
-       blocks[i] = plaintext.splice(i*16,(i+1)*16);
-       size++;
+    for(; i*16<plaintext.length; i++){
+        blocks[i] = plaintext.slice(i*16,(i+1)*16);
+        console.log("blocks["+i+"]="+blocks[i]);
+        size++;
     }
     console.log("Starting encryption engine: blocks "+size);
+    console.log("PLAINTEXT: "+plaintext);
     //for each block
     for(i=0; i<size; i++){
-      //console.log("Encrypting block "+(i+1)+"/"+size+"...");
-      cyphertext = Array.concat(cyphertext,Encrypt(blocks[i], rounds));
-      //console.log("Encrypted!");
+        console.log("Encrypting block "+(i+1)+"/"+size+"..."+"("+blocks[i]+")");
+        cyphertext = Array.concat(cyphertext,Encrypt(blocks[i], rounds));
+        //console.log("Encrypted!");
     }
     console.log("Final encryption result (hex): "+cyphertext);
     cyphertext = ASCIIArrayToString(cyphertext);
@@ -484,14 +671,16 @@ function decryptStart(cyphertext,key){
     //break into matrix
     cyphertext=StringToASCIIArray(cyphertext);
     console.log("Starting decryption engine: cyphertext before "+cyphertext);
-    for(; i*16<=cyphertext.length; i++){
-        blocks[i] = cyphertext.splice(i*16,(i+1)*16);
+    for(; i*16<cyphertext.length; i++){
+        blocks[i] = cyphertext.slice(i*16,(i+1)*16);
+        console.log("blocks["+i+"]="+blocks[i]);
         size++;
     }
     console.log("Starting decryption engine: blocks "+size);
+    console.log("CYPHERTEXT: "+cyphertext);
     //for each block
     for(i=0; i<size; i++){
-        //console.log("Decrypting block "+(i+1)+"/"+size+"...");
+        console.log("Decrypting block "+(i+1)+"/"+size+"..."+"("+blocks[i]+")");
         plaintext = Array.concat(plaintext,Decrypt(blocks[i], rounds));
         //console.log("Decrypted!");
     }
@@ -500,5 +689,13 @@ function decryptStart(cyphertext,key){
     console.log("Final decryption result (string): "+plaintext);
     return plaintext;
 }
-console.log("Final Result: "+decryptStart(encryptStart("abcdabcdabcd1234","1234567812345678"),"1234567812345678"));
-//interface with encrypt module
+//console.log("Final Result: "+decryptStart(encryptStart("abcdabcdabcdabcd1234567812345678","1234567812345678"),"1234567812345678"));
+
+
+/*function main(){
+    self.port.on("encrypt",encryptStart);
+    self.port.on("decrypt",decryptStart);
+    //destroy function
+}
+
+main();*/
